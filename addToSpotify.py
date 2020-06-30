@@ -50,15 +50,14 @@ args = parser.parse_args()
 
 scope = "playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public"
 track_ids_from_file = getSpotifyIdsFromFile(args.input)
-
+print("parsed " + str(len(track_ids_from_file)) + " track IDs")
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     scope=scope))
 playlists = sp.current_user_playlists()
 for playlist in playlists["items"]:
-    print(playlist["name"])
-
     if playlist["name"] == args.playlistName:
-        if playlist["tracks"]["total"] == len(track_ids_from_file):
+        print("Found playlist: " + playlist["name"])
+        if playlist["tracks"]["total"] == len(track_ids_from_file) and not args.append:
             print("playlist is up to date!")
         else:
             # check for empty playlist
@@ -68,7 +67,7 @@ for playlist in playlists["items"]:
             else:
                 # if playlist is not empty, get last id currently in the playlist
                 last_track_id = getLastTrackId(sp, playlist)
-                print("last track id is", last_track_id)
+                print("last track id in playlist is", last_track_id)
                 # find this id in the list of id pulled from file, and get its last index (last because it may be here more than once)
                 all_matches = [i for i, e in enumerate(
                     track_ids_from_file) if e == last_track_id]
@@ -78,7 +77,6 @@ for playlist in playlists["items"]:
                     raise Exception(
                         "parsed links don't match playlist contents. use --append option to add new set of tracks")
                 last_index = all_matches[len(all_matches) - 1]
-                print(last_index)
                 # continue adding tracks to the playlist based on this index
                 index_to_start_from = last_index + 1
                 if index_to_start_from == len(track_ids_from_file):
